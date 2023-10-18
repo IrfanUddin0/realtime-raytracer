@@ -50,13 +50,13 @@ glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
 
 	glm::vec3 out_col = glm::vec3(0.0f);
 	float multiplier_falloff = 1.0f;
-	int bounces = 4;
+	int bounces = 5;
 	for (int i = 0; i < bounces; i++)
 	{
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)
 		{
-			glm::vec3 skyColor = glm::vec3(0.1f, 0.8f, 1.0f);
+			glm::vec3 skyColor = glm::vec3(0.7f, 0.9f, 1.0f);
 			out_col += skyColor * multiplier_falloff;
 			break;
 		}
@@ -64,12 +64,17 @@ glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
 		glm::vec3 light_dir(-1, -1, -1);
 		light_dir = glm::normalize(light_dir);
 
+		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
+		const Material& material = m_ActiveScene->materials[sphere.MaterialIndex];
+
 		float face_light = glm::max(glm::dot(payload.WorldNormal, -light_dir), 0.0f);
-		out_col += m_ActiveScene->Spheres[payload.objectIndex].col * face_light * multiplier_falloff;
-		multiplier_falloff *= 0.7;
+		auto albedo = material.Albedo;
+		out_col += albedo * face_light * multiplier_falloff;
+		multiplier_falloff *= 0.5;
 
 		ray.Origin = payload.WorldPosition + FLT_MIN * payload.WorldNormal;
-		ray.Direction = glm::reflect(ray.Direction, payload.WorldNormal);
+		ray.Direction = glm::reflect(ray.Direction,
+			payload.WorldNormal + material.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
 	}
 
 	return glm::vec4(out_col, 1.0f);
