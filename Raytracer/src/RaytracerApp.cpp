@@ -35,10 +35,6 @@ public:
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Render Time: %f ms",m_RenderTime);
-		if (ImGui::Button("Render"))
-		{
-			Render();
-		}
 		ImGui::End();
 
 		ImGui::Begin("Camera");
@@ -53,8 +49,15 @@ public:
 		ImGui::Begin("Scene");
 		if (ImGui::Button("Create Sphere"))
 			m_scene.Spheres.push_back(Sphere{ {1.f,0.f,0.f}, 0.5f, {0.f,0.f,0.f} });
-		for (auto& obj : m_scene.Spheres) {
+		for (size_t i = 0; i < m_scene.Spheres.size(); i ++) {
+			auto& obj = m_scene.Spheres[i];
 			ImGui::PushID(&obj);
+			if (ImGui::Button("Delete Sphere"))
+			{
+				m_scene.Spheres.erase(m_scene.Spheres.begin() + i);
+				ImGui::PopID();
+				break;
+			}
 			ImGui::DragFloat3("Position", glm::value_ptr(obj.Position), 0.1f);
 			ImGui::DragFloat("Radius", &obj.Radius, 0.1f);
 			ImGui::ColorEdit3("Colour", glm::value_ptr(obj.col), 0.1f);
