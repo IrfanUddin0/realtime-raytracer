@@ -14,7 +14,7 @@ class Renderer
 public:
 	struct Settings
 	{
-		bool Accumulate = false;
+		bool Accumulate = true;
 	};
 	Renderer() = default;
 	void Render(const Scene& scene, const Camera& camera);
@@ -46,7 +46,7 @@ private:
 	const Camera* m_ActiveCamera = nullptr;
 
 	uint32_t m_FrameIndex = 1;
-	uint32_t bounces = 5;
+	uint32_t bounces = 32;
 
 	std::vector<uint32_t> m_HorizontalIter;
 	std::vector<uint32_t> m_VerticalIter;

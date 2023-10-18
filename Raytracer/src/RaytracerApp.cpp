@@ -18,17 +18,27 @@ public:
 	{
 		m_scene.materials.push_back(Material{ { 1.0f, 0.0f, 0.0f }, 0.1f, 1.f });
 		m_scene.materials.push_back(Material{ { 1.0f, 0.0f, 1.0f }, 0.1f, 1.f });
+		m_scene.materials.push_back(Material{ { 1.0f, 1.0f, 1.0f }, 0.1f, 1.f , { 1.0f, 1.0f, 1.0f } , 5.0f});
 
 		{
 			Sphere sphere;
 			sphere.Position = { 0.f,0.f,0.f };
 			sphere.Radius = 1.f;
+			sphere.MaterialIndex = 0;
 			m_scene.Spheres.push_back(sphere);
 		}
 		{
 			Sphere sphere;
 			sphere.Position = { 0.f,-1001.f,0.f };
 			sphere.Radius = 1000.f;
+			sphere.MaterialIndex = 1;
+			m_scene.Spheres.push_back(sphere);
+		}
+		{
+			Sphere sphere;
+			sphere.Position = { 5.f,5.f,-1.f };
+			sphere.Radius = 2.f;
+			sphere.MaterialIndex = 2;
 			m_scene.Spheres.push_back(sphere);
 		}
 	}
@@ -36,11 +46,12 @@ public:
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Render Time: %f ms",m_RenderTime);
-		ImGui::Checkbox("Pathtrace", &m_Renderer.getSettings().Accumulate);
+		ImGui::Checkbox("Accumulate Samples", &m_Renderer.getSettings().Accumulate);
 		if (ImGui::Button("Reset"))
 			m_Renderer.ResetFrameIndex();
 		ImGui::DragInt("Bounces", (int*)&m_Renderer.getBounces(),0.1f, 1, 128);
 		ImGui::End();
+
 
 		ImGui::Begin("Camera");
 		if (
@@ -71,12 +82,18 @@ public:
 		}
 		ImGui::End();
 
+
 		ImGui::Begin("Materials");
+		if (ImGui::Button("Create Material"))
+			m_scene.materials.push_back(Material{});
 		for (auto& material : m_scene.materials) {
 			ImGui::PushID(&material);
 			ImGui::ColorEdit3("Colour", glm::value_ptr(material.Albedo), 0.1f);
 			ImGui::DragFloat("Metallic", &material.Metallic, 0.01f, 0.0f, 1.0f);
 			ImGui::DragFloat("Roughness", &material.Roughness, 0.01f, 0.0f, 1.0f);
+
+			ImGui::ColorEdit3("Emission Color", glm::value_ptr(material.EmissionColor));
+			ImGui::DragFloat("Emission Power", &material.EmissionPower, 0.01f, 0.0f, FLT_MAX);
 			ImGui::Separator();
 			ImGui::PopID();
 		}

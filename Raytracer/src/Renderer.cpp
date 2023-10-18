@@ -5,6 +5,27 @@ namespace Utils {
 	{
 		return (int)(col.a * 255.f) << 24 | (int)(col.b * 255.f) << 16 | (int)(col.g * 255.f) << 8 | (int)(col.r * 255.f);
 	}
+
+	static uint32_t PCG_Hash(uint32_t input)
+	{
+		uint32_t state = input * 747796405u + 2891336453u;
+		uint32_t word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+		return (word >> 22u) ^ word;
+	}
+
+	static float RandomFloat(uint32_t& seed)
+	{
+		seed = PCG_Hash(seed);
+		return (float)seed / (float)UINT32_MAX;
+	}
+
+	static glm::vec3 InUnitSphere(uint32_t& seed)
+	{
+		return glm::normalize(glm::vec3(
+			RandomFloat(seed) * 2.0f - 1.0f,
+			RandomFloat(seed) * 2.0f - 1.0f,
+			RandomFloat(seed) * 2.0f - 1.0f));
+	}
 }
 
 void Renderer::Render(const Scene& scene, const Camera& camera)
@@ -74,35 +95,35 @@ glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
 	ray.Origin = m_ActiveCamera->GetPosition();
 	ray.Direction = m_ActiveCamera->GetRayDirections()[x + y * (float)m_FinalImage->GetWidth()];
 
-	glm::vec3 out_col = glm::vec3(0.0f);
-	float multiplier_falloff = 1.0f;
+	glm::vec3 light = glm::vec3(0.0f);
+	glm::vec3 throughput(1.0f);
+
+	uint32_t seed = x + y * (float)m_FinalImage->GetWidth();
+	seed *= m_FrameIndex;
+
 	for (uint32_t i = 0; i < bounces; i++)
 	{
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)
 		{
-			glm::vec3 skyColor = glm::vec3(0.7f, 0.9f, 1.0f);
-			out_col += skyColor * multiplier_falloff;
+			glm::vec3 skyColor = glm::vec3(0.0f, 0.0f, 0.0f);
+			light += skyColor * throughput;
 			break;
 		}
-
-		glm::vec3 light_dir(-1, -1, -1);
-		light_dir = glm::normalize(light_dir);
 
 		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
 		const Material& material = m_ActiveScene->materials[sphere.MaterialIndex];
 
-		float face_light = glm::max(glm::dot(payload.WorldNormal, -light_dir), 0.0f);
-		auto albedo = material.Albedo;
-		out_col += albedo * face_light * multiplier_falloff;
-		multiplier_falloff *= 0.5;
+		throughput *= material.Albedo;
+		light += material.getEmission() * throughput;
 
 		ray.Origin = payload.WorldPosition + FLT_MIN * payload.WorldNormal;
-		ray.Direction = glm::reflect(ray.Direction,
-			payload.WorldNormal + material.Roughness * Walnut::Random::Vec3(-0.5f, 0.5f));
+		//ray.Direction = glm::reflect(ray.Direction, payload.WorldNormal + material.Roughness * Utils::InUnitSphere(seed));
+
+		ray.Direction = glm::normalize(payload.WorldNormal + Utils::InUnitSphere(seed));
 	}
 
-	return glm::vec4(out_col, 1.0f);
+	return glm::vec4(light, 1.0f);
 }
 
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
