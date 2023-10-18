@@ -36,6 +36,10 @@ public:
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Render Time: %f ms",m_RenderTime);
+		ImGui::Checkbox("Pathtrace", &m_Renderer.getSettings().Accumulate);
+		if (ImGui::Button("Reset"))
+			m_Renderer.ResetFrameIndex();
+		ImGui::DragInt("Bounces", (int*)&m_Renderer.getBounces(),0.1f, 1, 128);
 		ImGui::End();
 
 		ImGui::Begin("Camera");
@@ -96,7 +100,10 @@ public:
 
 	virtual void OnUpdate(float ts) override
 	{
-		m_camera.OnUpdate(ts);
+		if (m_camera.OnUpdate(ts))
+		{
+			m_Renderer.ResetFrameIndex();
+		}
 	}
 
 	void Render() {

@@ -12,16 +12,32 @@ void Renderer::Render(const Scene& scene, const Camera& camera)
 	m_ActiveScene = &scene;
 	m_ActiveCamera = &camera;
 
-	for (uint32_t y = 0; y < m_FinalImage->GetHeight(); y++)
-	{
-		for (uint32_t x = 0; x < m_FinalImage->GetWidth(); x++)
+	if (m_FrameIndex == 1)
+		memset(m_AccumulationData, 0.0f, m_FinalImage->GetWidth() * m_FinalImage->GetHeight() * sizeof(glm::vec4));
+
+	std::for_each(std::execution::par, m_VerticalIter.begin(), m_VerticalIter.end(),
+		[this](uint32_t y)
 		{
-			glm::vec4 col = RayGen(x, y);
-			col = glm::clamp(col, glm::vec4(0.f), glm::vec4(1.f));
-			m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(col);
-		}
-	}
+			std::for_each(std::execution::par, m_HorizontalIter.begin(), m_HorizontalIter.end(),
+			[this, y](uint32_t x)
+				{
+					glm::vec4 col = RayGen(x, y);
+					m_AccumulationData[x + y * m_FinalImage->GetWidth()] += col;
+
+					glm::vec4 accumulatedCol = m_AccumulationData[x + y * m_FinalImage->GetWidth()];
+					accumulatedCol /= (float)m_FrameIndex;
+
+					accumulatedCol = glm::clamp(accumulatedCol, glm::vec4(0.f), glm::vec4(1.f));
+					m_ImageData[x + y * m_FinalImage->GetWidth()] = Utils::ConvertToRGBA(accumulatedCol);
+				});
+		});
+
 	m_FinalImage->SetData(m_ImageData);
+
+	if (m_Settings.Accumulate)
+		m_FrameIndex++;
+	else
+		m_FrameIndex = 1;
 }
 
 void Renderer::OnResize(uint32_t width, uint32_t height)
@@ -37,9 +53,19 @@ void Renderer::OnResize(uint32_t width, uint32_t height)
 	{
 		m_FinalImage = std::make_shared<Walnut::Image>(width, height, Walnut::ImageFormat::RGBA);
 	}
+	ResetFrameIndex();
 
 	delete[] m_ImageData;
 	m_ImageData = new uint32_t[width * height];
+
+	delete[] m_AccumulationData;
+	m_AccumulationData = new glm::vec4[width * height];
+
+	m_HorizontalIter.resize(width);
+	m_VerticalIter.resize(height);
+
+	for (uint32_t i = 0; i < width; i++) { m_HorizontalIter[i] = i; }
+	for (uint32_t i = 0; i < height; i++) { m_VerticalIter[i] = i; }
 }
 
 glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
@@ -50,8 +76,7 @@ glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
 
 	glm::vec3 out_col = glm::vec3(0.0f);
 	float multiplier_falloff = 1.0f;
-	int bounces = 5;
-	for (int i = 0; i < bounces; i++)
+	for (uint32_t i = 0; i < bounces; i++)
 	{
 		Renderer::HitPayload payload = TraceRay(ray);
 		if (payload.HitDistance < 0.0f)

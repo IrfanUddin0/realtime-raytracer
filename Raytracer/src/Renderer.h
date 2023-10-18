@@ -3,6 +3,7 @@
 #include "Walnut/Random.h"
 #include <memory>
 #include <glm/glm.hpp>
+#include <execution>
 
 #include "Camera.h"
 #include "Ray.h"
@@ -11,12 +12,18 @@
 class Renderer
 {
 public:
+	struct Settings
+	{
+		bool Accumulate = false;
+	};
 	Renderer() = default;
 	void Render(const Scene& scene, const Camera& camera);
 	void OnResize(uint32_t width, uint32_t height);
 
 	std::shared_ptr < Walnut::Image> GetFinalImage() const { return m_FinalImage; };
-
+	void ResetFrameIndex() { m_FrameIndex = 1; }
+	Settings& getSettings() { return m_Settings; }
+	uint32_t& getBounces() { return bounces; }
 private:
 	struct HitPayload
 	{
@@ -30,10 +37,18 @@ private:
 	HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
 	HitPayload Miss(const Ray& ray);
 private:
+	Settings m_Settings;
 	std::shared_ptr<Walnut::Image> m_FinalImage;
 	uint32_t* m_ImageData = nullptr;
+	glm::vec4* m_AccumulationData = nullptr;
 
-	const Scene* m_ActiveScene;
-	const Camera* m_ActiveCamera;
+	const Scene* m_ActiveScene = nullptr;
+	const Camera* m_ActiveCamera = nullptr;
+
+	uint32_t m_FrameIndex = 1;
+	uint32_t bounces = 5;
+
+	std::vector<uint32_t> m_HorizontalIter;
+	std::vector<uint32_t> m_VerticalIter;
 };
 
