@@ -129,13 +129,13 @@ glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 {
 	const SceneObject* closest = nullptr;
-	float hitDistance = FLT_MAX;
+	IntersectResult hitDistance = { FLT_MAX, glm::vec3(0.0f) };
 
 	for (size_t i = 0; i < m_ActiveScene->Objects.size(); i++)
 	{
 		const SceneObject* objPtr = m_ActiveScene->Objects[i].get();
-		float t = objPtr->RayIntersect(ray);
-		if (t > 0 && t < hitDistance)
+		IntersectResult t = objPtr->RayIntersect(ray);
+		if (t.HitDistance > 0 && t.HitDistance < hitDistance.HitDistance)
 		{
 			hitDistance = t;
 			closest = objPtr;
@@ -155,16 +155,16 @@ Renderer::HitPayload Renderer::Miss(const Ray& ray)
 	return payload;
 }
 
-Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, const SceneObject* object)
+Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, IntersectResult hitDistance, const SceneObject* object)
 {
 	Renderer::HitPayload payload;
-	payload.HitDistance = hitDistance;
+	payload.HitDistance = hitDistance.HitDistance;
 	payload.object = object;
 
 	const SceneObject& closest = *object;
 	glm::vec3 origin = ray.Origin - closest.Position;
-	payload.WorldPosition = origin + ray.Direction * hitDistance;
-	payload.WorldNormal = object->getNormalAtIntersection(ray, hitDistance);
+	payload.WorldPosition = origin + ray.Direction * hitDistance.HitDistance;
+	payload.WorldNormal = hitDistance.HitSurfaceNormal;
 	payload.WorldPosition += closest.Position;
 
 	return payload;

@@ -6,6 +6,12 @@
 
 #include "Ray.h"
 
+struct IntersectResult
+{
+	float HitDistance;
+	glm::vec3 HitSurfaceNormal;
+};
+
 struct Material
 {
 	glm::vec3 Albedo{ 1.0f, 1.0f, 1.0f };
@@ -24,8 +30,7 @@ public:
 	SceneObject(){}
 	SceneObject(glm::vec3 pos, int mat) :
 		Position(pos),MaterialIndex(mat){}
-	virtual float RayIntersect(const Ray& ray) const { return -1.0f; };
-	virtual glm::vec3 getNormalAtIntersection(const Ray& ray, float hitDistance) const = 0;
+	virtual IntersectResult RayIntersect(const Ray& ray) const = 0;
 
 public:
 	glm::vec3 Position{ 0.0f };
@@ -39,7 +44,7 @@ public:
 	Sphere(glm::vec3 pos, float rad, int mat) :
 		SceneObject{pos, mat}, Radius(rad) {}
 
-	float RayIntersect(const Ray& ray) const override
+	IntersectResult RayIntersect(const Ray& ray) const override
 	{
 		const auto& sphere = *this;
 		auto origin = ray.Origin - sphere.Position;
@@ -50,16 +55,12 @@ public:
 
 		float d = b * b - 4.f * a * c;
 		if (d < 0)
-			return -1.0f;
+			return IntersectResult{ -1.0f };
 
-		return (-b - glm::sqrt(d)) / (2.f * a);
+		float t = (-b - glm::sqrt(d)) / (2.f * a);
+		return IntersectResult{ t,  glm::normalize(origin + ray.Direction * t) };
 	}
 
-	glm::vec3 getNormalAtIntersection(const Ray& ray, float hitDistance) const override
-	{
-		glm::vec3 origin = ray.Origin - Position;
-		return glm::normalize(origin + ray.Direction * hitDistance);
-	}
 public:
 	float Radius = 1.0f;
 };
@@ -71,29 +72,24 @@ public:
 	Plane(glm::vec3 pos, glm::vec3 normal, int mat) :
 		SceneObject{ pos, mat }, Normal(glm::normalize(normal)) {}
 
-	float RayIntersect(const Ray& ray) const override
+	IntersectResult RayIntersect(const Ray& ray) const override
 	{
 		const auto& plane = *this;
 		float denom = glm::dot(plane.Normal, ray.Direction);
 
 		if (glm::abs(denom) < 1e-6)
 		{
-			return -1.0f;
+			return IntersectResult{ -1.0f };
 		}
 
 		float t = glm::dot(plane.Position - ray.Origin, plane.Normal) / denom;
 
 		if (t < 0.0f)
 		{
-			return -1.0f;
+			return IntersectResult{ -1.0f };
 		}
 
-		return t;
-	}
-
-	glm::vec3 getNormalAtIntersection(const Ray& ray, float hitDistance) const override
-	{
-		return Normal;
+		return IntersectResult{ t, Normal };
 	}
 
 public:

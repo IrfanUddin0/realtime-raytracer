@@ -35,7 +35,7 @@ private:
 	};
 	glm::vec4 RayGen(uint32_t x, uint32_t y);
 	HitPayload TraceRay(const Ray& ray);
-	HitPayload ClosestHit(const Ray& ray, float hitDistance, const SceneObject* object);
+	HitPayload ClosestHit(const Ray& ray, IntersectResult hitDistance, const SceneObject* object);
 	HitPayload Miss(const Ray& ray);
 private:
 	Settings m_Settings;
