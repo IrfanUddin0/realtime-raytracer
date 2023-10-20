@@ -111,8 +111,8 @@ glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
 			break;
 		}
 
-		const Sphere& sphere = m_ActiveScene->Spheres[payload.objectIndex];
-		const Material& material = m_ActiveScene->materials[sphere.MaterialIndex];
+		const SceneObject& obj = *payload.object;
+		const Material& material = m_ActiveScene->materials[obj.MaterialIndex];
 
 		throughput *= material.Albedo;
 		light += material.getEmission() * throughput;
@@ -128,36 +128,21 @@ glm::vec4 Renderer::RayGen(uint32_t x, uint32_t y)
 
 Renderer::HitPayload Renderer::TraceRay(const Ray& ray)
 {
-	int closest = -1;
+	const SceneObject* closest = nullptr;
 	float hitDistance = FLT_MAX;
 
-	for (size_t i = 0; i < m_ActiveScene->Spheres.size(); i++)
+	for (size_t i = 0; i < m_ActiveScene->Objects.size(); i++)
 	{
-		const auto sphere = m_ActiveScene->Spheres[i];
-		auto origin = ray.Origin - sphere.Position;
-
-		float a = glm::dot(ray.Direction, ray.Direction);
-		float b = 2 * glm::dot(origin, ray.Direction);
-		float c = glm::dot(origin, origin) - sphere.Radius * sphere.Radius;
-
-		float d = b * b - 4.f * a * c;
-		if (d < 0)
-			continue;
-
-		float t[2] =
+		const SceneObject* objPtr = m_ActiveScene->Objects[i].get();
+		float t = objPtr->RayIntersect(ray);
+		if (t > 0 && t < hitDistance)
 		{
-			(-b - glm::sqrt(d)) / (2.f * a),
-			(-b + glm::sqrt(d)) / (2.f * a)
-		};
-
-		if (t[0] > 0 && t[0] < hitDistance)
-		{
-			hitDistance = t[0];
-			closest = (int)i;
+			hitDistance = t;
+			closest = objPtr;
 		}
 	}
 
-	if (closest < 0.0f)
+	if (closest == nullptr)
 		return Miss(ray);
 
 	return ClosestHit(ray, hitDistance, closest);	
@@ -170,13 +155,13 @@ Renderer::HitPayload Renderer::Miss(const Ray& ray)
 	return payload;
 }
 
-Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, int objectIndex)
+Renderer::HitPayload Renderer::ClosestHit(const Ray& ray, float hitDistance, const SceneObject* object)
 {
 	Renderer::HitPayload payload;
 	payload.HitDistance = hitDistance;
-	payload.objectIndex = objectIndex;
+	payload.object = object;
 
-	const Sphere& closest = m_ActiveScene->Spheres[objectIndex];
+	const SceneObject& closest = *object;
 	glm::vec3 origin = ray.Origin - closest.Position;
 	payload.WorldPosition = origin + ray.Direction * hitDistance;
 	payload.WorldNormal = glm::normalize(payload.WorldPosition);

@@ -24,17 +24,18 @@ public:
 	void ResetFrameIndex() { m_FrameIndex = 1; }
 	Settings& getSettings() { return m_Settings; }
 	uint32_t& getBounces() { return bounces; }
+	const uint32_t& getFrameIndex() { return m_FrameIndex; }
 private:
 	struct HitPayload
 	{
 		float HitDistance;
 		glm::vec3 WorldPosition;
 		glm::vec3 WorldNormal;
-		int objectIndex;
+		const SceneObject* object;
 	};
 	glm::vec4 RayGen(uint32_t x, uint32_t y);
 	HitPayload TraceRay(const Ray& ray);
-	HitPayload ClosestHit(const Ray& ray, float hitDistance, int objectIndex);
+	HitPayload ClosestHit(const Ray& ray, float hitDistance, const SceneObject* object);
 	HitPayload Miss(const Ray& ray);
 private:
 	Settings m_Settings;

@@ -25,27 +25,28 @@ public:
 			sphere.Position = { 0.f,0.f,0.f };
 			sphere.Radius = 1.f;
 			sphere.MaterialIndex = 0;
-			m_scene.Spheres.push_back(sphere);
+			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
 		}
 		{
 			Sphere sphere;
 			sphere.Position = { 0.f,-1001.f,0.f };
 			sphere.Radius = 1000.f;
 			sphere.MaterialIndex = 1;
-			m_scene.Spheres.push_back(sphere);
+			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
 		}
 		{
 			Sphere sphere;
 			sphere.Position = { 5.f,5.f,-1.f };
 			sphere.Radius = 2.f;
 			sphere.MaterialIndex = 2;
-			m_scene.Spheres.push_back(sphere);
+			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
 		}
 	}
 	virtual void OnUIRender() override
 	{
 		ImGui::Begin("Settings");
 		ImGui::Text("Render Time: %f ms",m_RenderTime);
+		ImGui::Text("Sample No.: %i", m_Renderer.getFrameIndex());
 		ImGui::Checkbox("Accumulate Samples", &m_Renderer.getSettings().Accumulate);
 		if (ImGui::Button("Reset"))
 			m_Renderer.ResetFrameIndex();
@@ -64,19 +65,19 @@ public:
 
 		ImGui::Begin("Scene");
 		if (ImGui::Button("Create Sphere"))
-			m_scene.Spheres.push_back(Sphere{ {1.f,0.f,0.f}, 0.5f });
-		for (size_t i = 0; i < m_scene.Spheres.size(); i ++) {
-			auto& obj = m_scene.Spheres[i];
+			m_scene.Objects.push_back(std::make_unique<Sphere>(Sphere({ 1.f,0.f,0.f }, 0.5f, 0)));
+		for (size_t i = 0; i < m_scene.Objects.size(); i ++) {
+			auto& obj = m_scene.Objects[i];
 			ImGui::PushID(&obj);
-			if (ImGui::Button("Delete Sphere"))
+			if (ImGui::Button("Delete Object"))
 			{
-				m_scene.Spheres.erase(m_scene.Spheres.begin() + i);
+				m_scene.Objects.erase(m_scene.Objects.begin() + i);
 				ImGui::PopID();
 				break;
 			}
-			ImGui::DragFloat3("Position", glm::value_ptr(obj.Position), 0.01f);
-			ImGui::DragFloat("Radius", &obj.Radius, 0.1f);
-			ImGui::DragInt("Material Index", &obj.MaterialIndex, 1.0f, 0.0f, (int)m_scene.materials.size()-1);
+			ImGui::DragFloat3("Position", glm::value_ptr(obj->Position), 0.01f);
+			ImGui::DragFloat("Radius", &obj->Radius, 0.1f);
+			ImGui::DragInt("Material Index", &obj->MaterialIndex, 1.0f, 0.0f, (int)m_scene.materials.size()-1);
 			ImGui::Separator();
 			ImGui::PopID();
 		}
