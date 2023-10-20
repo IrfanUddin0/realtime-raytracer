@@ -4,7 +4,6 @@ A raytracer/pathtracer written in c++
 # Controls:
 Hold Right-Click and WASD to move
 # TODO:
-- add triangle rendering support
 - model import
 - add serialization/deserialization
 - texture mapping
