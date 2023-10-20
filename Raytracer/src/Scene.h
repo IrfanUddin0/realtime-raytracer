@@ -22,13 +22,13 @@ class SceneObject
 {
 public:
 	SceneObject(){}
-	SceneObject(glm::vec3 pos, float rad, int mat) :
-		Position(pos),Radius(rad),MaterialIndex(mat){}
+	SceneObject(glm::vec3 pos, int mat) :
+		Position(pos),MaterialIndex(mat){}
 	virtual float RayIntersect(const Ray& ray) const { return -1.0f; };
+	virtual glm::vec3 getNormalAtIntersection(const Ray& ray, float hitDistance) const = 0;
 
 public:
 	glm::vec3 Position{ 0.0f };
-	float Radius = 0.5f;
 	int MaterialIndex = 0;
 };
 
@@ -37,7 +37,7 @@ class Sphere : public SceneObject
 public:
 	Sphere() {};
 	Sphere(glm::vec3 pos, float rad, int mat) :
-		SceneObject{pos, rad, mat} {}
+		SceneObject{pos, mat}, Radius(rad) {}
 
 	float RayIntersect(const Ray& ray) const override
 	{
@@ -54,6 +54,50 @@ public:
 
 		return (-b - glm::sqrt(d)) / (2.f * a);
 	}
+
+	glm::vec3 getNormalAtIntersection(const Ray& ray, float hitDistance) const override
+	{
+		glm::vec3 origin = ray.Origin - Position;
+		return glm::normalize(origin + ray.Direction * hitDistance);
+	}
+public:
+	float Radius = 1.0f;
+};
+
+class Plane : public SceneObject
+{
+public:
+	Plane() {};
+	Plane(glm::vec3 pos, glm::vec3 normal, int mat) :
+		SceneObject{ pos, mat }, Normal(glm::normalize(normal)) {}
+
+	float RayIntersect(const Ray& ray) const override
+	{
+		const auto& plane = *this;
+		float denom = glm::dot(plane.Normal, ray.Direction);
+
+		if (glm::abs(denom) < 1e-6)
+		{
+			return -1.0f;
+		}
+
+		float t = glm::dot(plane.Position - ray.Origin, plane.Normal) / denom;
+
+		if (t < 0.0f)
+		{
+			return -1.0f;
+		}
+
+		return t;
+	}
+
+	glm::vec3 getNormalAtIntersection(const Ray& ray, float hitDistance) const override
+	{
+		return Normal;
+	}
+
+public:
+	glm::vec3 Normal{ 0.0f, 1.0f, 0.0f };
 };
 
 struct Scene

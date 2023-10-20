@@ -29,17 +29,17 @@ public:
 		}
 		{
 			Sphere sphere;
-			sphere.Position = { 0.f,-1001.f,0.f };
-			sphere.Radius = 1000.f;
-			sphere.MaterialIndex = 1;
-			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
-		}
-		{
-			Sphere sphere;
 			sphere.Position = { 5.f,5.f,-1.f };
 			sphere.Radius = 2.f;
 			sphere.MaterialIndex = 2;
 			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
+		}
+		{
+			Plane plane;
+			plane.Position = { 0.0f, -1.0f, 0.0f };
+			plane.Normal = { 0.0f, 1.0f, 0.0f };
+			plane.MaterialIndex = 1;
+			m_scene.Objects.push_back(std::make_unique<Plane>(plane));
 		}
 	}
 	virtual void OnUIRender() override
@@ -76,7 +76,10 @@ public:
 				break;
 			}
 			ImGui::DragFloat3("Position", glm::value_ptr(obj->Position), 0.01f);
-			ImGui::DragFloat("Radius", &obj->Radius, 0.1f);
+
+			if(dynamic_cast<const Sphere*>(obj.get()))
+				ImGui::DragFloat("Radius", &dynamic_cast<Sphere*>(obj.get())->Radius, 0.1f);
+			
 			ImGui::DragInt("Material Index", &obj->MaterialIndex, 1.0f, 0.0f, (int)m_scene.materials.size()-1);
 			ImGui::Separator();
 			ImGui::PopID();
