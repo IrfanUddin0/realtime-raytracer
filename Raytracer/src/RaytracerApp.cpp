@@ -10,6 +10,10 @@
 
 #include <glm/gtc/type_ptr.hpp>
 
+Sphere createSphere();
+Plane createPlane();
+Model createCube();
+
 class ExampleLayer : public Walnut::Layer
 {
 public:
@@ -17,16 +21,9 @@ public:
 		: m_camera(87.f, 0.1f, 100.f)
 	{
 		m_scene.materials.push_back(Material{ { 1.0f, 0.0f, 0.0f }, 0.1f, 1.f });
-		m_scene.materials.push_back(Material{ { 1.0f, 0.0f, 1.0f }, 0.1f, 1.f });
+		m_scene.materials.push_back(Material{ { 1.0f, 1.0f, 1.0f }, 0.1f, 1.f });
 		m_scene.materials.push_back(Material{ { 1.0f, 1.0f, 1.0f }, 0.1f, 1.f , { 1.0f, 1.0f, 1.0f } , 5.0f});
 
-		{
-			Sphere sphere;
-			sphere.Position = { 0.f,0.f,0.f };
-			sphere.Radius = 1.f;
-			sphere.MaterialIndex = 0;
-			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
-		}
 		{
 			Sphere sphere;
 			sphere.Position = { 5.f,5.f,-1.f };
@@ -35,57 +32,20 @@ public:
 			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
 		}
 		{
-			Plane plane;
-			plane.Position = { 0.0f, -1.0f, 0.0f };
-			plane.Normal = { 0.0f, 1.0f, 0.0f };
+			Sphere sphere = createSphere();
+			m_scene.Objects.push_back(std::make_unique<Sphere>(sphere));
+		}
+		{
+			Plane plane = createPlane();
+			plane.Position.y = -1;
 			plane.MaterialIndex = 1;
 			m_scene.Objects.push_back(std::make_unique<Plane>(plane));
 		}
 		{
-			std::vector<Triangle> cubeTriangles;
-
-			// Define the vertices of the cube
-			glm::vec3 vertices[8] = {
-				glm::vec3(-0.5, -0.5, -0.5),
-				glm::vec3(0.5, -0.5, -0.5),
-				glm::vec3(0.5, 0.5, -0.5),
-				glm::vec3(-0.5, 0.5, -0.5),
-				glm::vec3(-0.5, -0.5, 0.5),
-				glm::vec3(0.5, -0.5, 0.5),
-				glm::vec3(0.5, 0.5, 0.5),
-				glm::vec3(-0.5, 0.5, 0.5)
-			};
-
-			// Define the indices for the triangles that make up each face
-			int indices[6][6] = {
-				{0, 1, 2, 0, 2, 3}, // Front face
-				{1, 5, 6, 1, 6, 2}, // Right face
-				{5, 4, 7, 5, 7, 6}, // Back face
-				{4, 0, 3, 4, 3, 7}, // Left face
-				{3, 2, 6, 3, 6, 7}, // Top face
-				{4, 5, 1, 4, 1, 0}  // Bottom face
-			};
-
-			// Create triangles for each face
-			for (int i = 0; i < 6; i++) {
-				Triangle t1;
-				t1.points[0] = { vertices[indices[i][0]].x, vertices[indices[i][0]].y, vertices[indices[i][0]].z };
-				t1.points[1] = { vertices[indices[i][1]].x, vertices[indices[i][1]].y, vertices[indices[i][1]].z };
-				t1.points[2] = { vertices[indices[i][2]].x, vertices[indices[i][2]].y, vertices[indices[i][2]].z };
-
-				Triangle t2;
-				t2.points[0] = { vertices[indices[i][3]].x, vertices[indices[i][3]].y, vertices[indices[i][3]].z };
-				t2.points[1] = { vertices[indices[i][4]].x, vertices[indices[i][4]].y, vertices[indices[i][4]].z };
-				t2.points[2] = { vertices[indices[i][5]].x, vertices[indices[i][5]].y, vertices[indices[i][5]].z };
-
-				cubeTriangles.push_back(t1);
-				cubeTriangles.push_back(t2);
-			}
-
-			// Instantiate a Model object with the cube triangles
-			Model cubeModel(cubeTriangles, glm::vec3(-2.0f, 0.0f, 2.0f), 0);
-
-			m_scene.Objects.push_back(std::make_unique<Model>(cubeModel));
+			Model cube = createCube();
+			cube.Position.x = 3.0f;
+			cube.MaterialIndex = 1;
+			m_scene.Objects.push_back(std::make_unique<Model>(cube));
 		}
 	}
 	virtual void OnUIRender() override
@@ -111,7 +71,13 @@ public:
 
 		ImGui::Begin("Scene");
 		if (ImGui::Button("Create Sphere"))
-			m_scene.Objects.push_back(std::make_unique<Sphere>(Sphere({ 1.f,0.f,0.f }, 0.5f, 0)));
+			m_scene.Objects.push_back(std::make_unique<Sphere>(createSphere()));
+		if (ImGui::Button("Create Plane"))
+			m_scene.Objects.push_back(std::make_unique<Plane>(createPlane()));
+		if (ImGui::Button("Create Cube"))
+			m_scene.Objects.push_back(std::make_unique<Model>(createCube()));
+
+		ImGui::Separator();
 		for (size_t i = 0; i < m_scene.Objects.size(); i ++) {
 			auto& obj = m_scene.Objects[i];
 			ImGui::PushID(&obj);
@@ -210,4 +176,65 @@ Walnut::Application* Walnut::CreateApplication(int argc, char** argv)
 		}
 	});
 	return app;
+}
+
+Sphere createSphere() {
+	Sphere sphere;
+	sphere.Position = { 0.f,0.f,0.f };
+	sphere.Radius = 1.f;
+	sphere.MaterialIndex = 0;
+	return sphere;
+}
+
+Plane createPlane() {
+	Plane plane;
+	plane.Position = { 0.0f, 0.0f, 0.0f };
+	plane.Normal = { 0.0f, 1.0f, 0.0f };
+	plane.MaterialIndex = 0;
+	return plane;
+}
+
+Model createCube() {
+	std::vector<Triangle> cubeTriangles;
+
+	// Define the vertices of the cube
+	glm::vec3 vertices[8] = {
+		glm::vec3(-0.5, -0.5, -0.5),
+		glm::vec3(0.5, -0.5, -0.5),
+		glm::vec3(0.5, 0.5, -0.5),
+		glm::vec3(-0.5, 0.5, -0.5),
+		glm::vec3(-0.5, -0.5, 0.5),
+		glm::vec3(0.5, -0.5, 0.5),
+		glm::vec3(0.5, 0.5, 0.5),
+		glm::vec3(-0.5, 0.5, 0.5)
+	};
+
+	// Define the indices for the triangles that make up each face
+	int indices[6][6] = {
+		{0, 1, 2, 0, 2, 3}, // Front face
+		{1, 5, 6, 1, 6, 2}, // Right face
+		{5, 4, 7, 5, 7, 6}, // Back face
+		{4, 0, 3, 4, 3, 7}, // Left face
+		{3, 2, 6, 3, 6, 7}, // Top face
+		{4, 5, 1, 4, 1, 0}  // Bottom face
+	};
+
+	// Create triangles for each face
+	for (int i = 0; i < 6; i++) {
+		Triangle t1;
+		t1.points[0] = { vertices[indices[i][0]].x, vertices[indices[i][0]].y, vertices[indices[i][0]].z };
+		t1.points[1] = { vertices[indices[i][1]].x, vertices[indices[i][1]].y, vertices[indices[i][1]].z };
+		t1.points[2] = { vertices[indices[i][2]].x, vertices[indices[i][2]].y, vertices[indices[i][2]].z };
+
+		Triangle t2;
+		t2.points[0] = { vertices[indices[i][3]].x, vertices[indices[i][3]].y, vertices[indices[i][3]].z };
+		t2.points[1] = { vertices[indices[i][4]].x, vertices[indices[i][4]].y, vertices[indices[i][4]].z };
+		t2.points[2] = { vertices[indices[i][5]].x, vertices[indices[i][5]].y, vertices[indices[i][5]].z };
+
+		cubeTriangles.push_back(t1);
+		cubeTriangles.push_back(t2);
+	}
+
+	// Instantiate a Model object with the cube triangles
+	return Model(cubeTriangles, glm::vec3(0.0f, 0.0f, 0.0f), 0);
 }
