@@ -41,6 +41,52 @@ public:
 			plane.MaterialIndex = 1;
 			m_scene.Objects.push_back(std::make_unique<Plane>(plane));
 		}
+		{
+			std::vector<Triangle> cubeTriangles;
+
+			// Define the vertices of the cube
+			glm::vec3 vertices[8] = {
+				glm::vec3(-0.5, -0.5, -0.5),
+				glm::vec3(0.5, -0.5, -0.5),
+				glm::vec3(0.5, 0.5, -0.5),
+				glm::vec3(-0.5, 0.5, -0.5),
+				glm::vec3(-0.5, -0.5, 0.5),
+				glm::vec3(0.5, -0.5, 0.5),
+				glm::vec3(0.5, 0.5, 0.5),
+				glm::vec3(-0.5, 0.5, 0.5)
+			};
+
+			// Define the indices for the triangles that make up each face
+			int indices[6][6] = {
+				{0, 1, 2, 0, 2, 3}, // Front face
+				{1, 5, 6, 1, 6, 2}, // Right face
+				{5, 4, 7, 5, 7, 6}, // Back face
+				{4, 0, 3, 4, 3, 7}, // Left face
+				{3, 2, 6, 3, 6, 7}, // Top face
+				{4, 5, 1, 4, 1, 0}  // Bottom face
+			};
+
+			// Create triangles for each face
+			for (int i = 0; i < 6; i++) {
+				Triangle t1;
+				t1.points[0] = { vertices[indices[i][0]].x, vertices[indices[i][0]].y, vertices[indices[i][0]].z };
+				t1.points[1] = { vertices[indices[i][1]].x, vertices[indices[i][1]].y, vertices[indices[i][1]].z };
+				t1.points[2] = { vertices[indices[i][2]].x, vertices[indices[i][2]].y, vertices[indices[i][2]].z };
+
+				Triangle t2;
+				t2.points[0] = { vertices[indices[i][3]].x, vertices[indices[i][3]].y, vertices[indices[i][3]].z };
+				t2.points[1] = { vertices[indices[i][4]].x, vertices[indices[i][4]].y, vertices[indices[i][4]].z };
+				t2.points[2] = { vertices[indices[i][5]].x, vertices[indices[i][5]].y, vertices[indices[i][5]].z };
+
+				cubeTriangles.push_back(t1);
+				cubeTriangles.push_back(t2);
+			}
+
+			// Instantiate a Model object with the cube triangles
+			Model cubeModel(cubeTriangles, glm::vec3(-2.0f, 0.0f, 2.0f), 0);
+
+			m_scene.Objects.push_back(std::make_unique<Model>(cubeModel));
+		}
 	}
 	virtual void OnUIRender() override
 	{

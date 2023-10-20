@@ -96,6 +96,74 @@ public:
 	glm::vec3 Normal{ 0.0f, 1.0f, 0.0f };
 };
 
+struct Point {
+	float x, y, z;
+};
+
+struct Triangle {
+	Point points[3];
+};
+
+class Model : public SceneObject {
+public:
+	Model(const std::vector<Triangle>& triangles, glm::vec3 pos, int mat) :
+		SceneObject{ pos, mat }, Triangles(triangles) {}
+
+	IntersectResult RayIntersect(const Ray& ray) const override {
+		IntersectResult closestIntersection{ FLT_MAX, glm::vec3(0.0f) };
+		for (const Triangle& triangle : Triangles) {
+			IntersectResult t = IntersectTriangle(ray, triangle);
+			if (t.HitDistance > 0.0f && t.HitDistance < closestIntersection.HitDistance) {
+				closestIntersection = t;
+			}
+		}
+		return closestIntersection.HitDistance == FLT_MAX ? IntersectResult { -1.0f }  : closestIntersection;
+	}
+
+private:
+	std::vector<Triangle> Triangles;
+
+	IntersectResult IntersectTriangle(const Ray& ray, const Triangle& triangle) const {
+		glm::vec3 v0(triangle.points[0].x, triangle.points[0].y, triangle.points[0].z);
+		glm::vec3 v1(triangle.points[1].x, triangle.points[1].y, triangle.points[1].z);
+		glm::vec3 v2(triangle.points[2].x, triangle.points[2].y, triangle.points[2].z);
+
+		v0 += Position;
+		v1 += Position;
+		v2 += Position;
+
+		glm::vec3 e1 = v1 - v0;
+		glm::vec3 e2 = v2 - v0;
+
+		// Calculate the normal of the triangle
+		glm::vec3 h = glm::cross(ray.Direction, e2);
+		float a = glm::dot(e1, h);
+
+		if (std::abs(a) < 1e-6)
+			return IntersectResult{ -1.0f };
+
+		float f = 1.0f / a;
+		glm::vec3 s = ray.Origin - v0;
+		float u = f * glm::dot(s, h);
+
+		if (u < 0.0f || u > 1.0f)
+			return IntersectResult{ -1.0f };
+
+		glm::vec3 q = glm::cross(s, e1);
+		float v = f * glm::dot(ray.Direction, q);
+
+		if (v < 0.0f || u + v > 1.0f)
+			return IntersectResult{ -1.0f };
+
+		float t = f * glm::dot(e2, q);
+
+		if (t > 0.0f) {
+			return IntersectResult{ t, h };
+		}
+		return IntersectResult{ -1.0f };
+	}
+};
+
 struct Scene
 {
 	std::vector<std::unique_ptr<SceneObject>> Objects;
